@@ -153,7 +153,9 @@ public class memory_mainView implements Runnable {
 			}
 		}
 	}
-
+	
+	//De huidige afbeeldingen renderen dus telkens kijken welke er induwt werden 
+	//en degene die reeds gematched werden blijven erop staan
 	private void render(Graphics g) {
 		g.drawImage(board, 0, 0, null);
 		if (unableToCommunicateWithOpponent) {
@@ -168,32 +170,43 @@ public class memory_mainView implements Runnable {
 
 		if (accepted) {
 			
+			// als er een kaart zit in checkforGelinkteKaarten heeft deze zijn positie, zoniet is deze gelijk aan -1
 			if(checkforGelinkteKaarten[0] != -1)
 			{				
-				//System.out.println("kaart "+ checkforGelinkteKaarten[0] + " index " + indexClick);
-				
+				System.out.println("kaart "+ checkforGelinkteKaarten[0] + " index " + indexClick);
+				System.out.println("kaart "+ checkforGelinkteKaarten[1] + " index " + indexClick);
+
+				// telkens de aangeklikte foto weergeven
 				if(indexClick == 0)
 				{					
 					g.drawImage(ImageArray[checkforGelinkteKaarten[0]], (checkforGelinkteKaarten[0] % groteGame) * lengthOfSpace + 10 * (checkforGelinkteKaarten[0] % groteGame), (int) (checkforGelinkteKaarten[0] / groteGame) * lengthOfSpace + 10 * (int) (checkforGelinkteKaarten[0] / groteGame), null);				
-				}
-				else
-				{	
 					if(checkforGelinkteKaarten[1] != -1)
 					{
-						System.out.println("kaart "+ checkforGelinkteKaarten[1] + " index " + indexClick);
+						g.drawImage(ImageArray[checkforGelinkteKaarten[1]], (checkforGelinkteKaarten[1] % groteGame) * lengthOfSpace + 10 * (checkforGelinkteKaarten[1] % groteGame), (int) (checkforGelinkteKaarten[1] / groteGame) * lengthOfSpace + 10 * (int) (checkforGelinkteKaarten[1] / groteGame), null);				
+					}
+				}
+				// bij twee aangeklikte gaan we deze ook weergeven en kijken als er een match is (dus twee dezelfde)
+				else
+				{	
+					g.drawImage(ImageArray[checkforGelinkteKaarten[0]], (checkforGelinkteKaarten[0] % groteGame) * lengthOfSpace + 10 * (checkforGelinkteKaarten[0] % groteGame), (int) (checkforGelinkteKaarten[0] / groteGame) * lengthOfSpace + 10 * (int) (checkforGelinkteKaarten[0] / groteGame), null);				
+
+					if(checkforGelinkteKaarten[1] != -1)
+					{
 
 						g.drawImage(ImageArray[checkforGelinkteKaarten[1]], (checkforGelinkteKaarten[1] % groteGame) * lengthOfSpace + 10 * (checkforGelinkteKaarten[1] % groteGame), (int) (checkforGelinkteKaarten[1] / groteGame) * lengthOfSpace + 10 * (int) (checkforGelinkteKaarten[1] / groteGame), null);				
 
 						checkMatch();
 
 					}
-					g.drawImage(ImageArray[checkforGelinkteKaarten[0]], (checkforGelinkteKaarten[0] % groteGame) * lengthOfSpace + 10 * (checkforGelinkteKaarten[0] % groteGame), (int) (checkforGelinkteKaarten[0] / groteGame) * lengthOfSpace + 10 * (int) (checkforGelinkteKaarten[0] / groteGame), null);				
 
 				}
 			}
 			
+			// de koppels die reeds gematcht zijn altijd weergeven ongeacht wat er aangeklikt wordt.
 			for (int i = 0; i < spaces.length; i++) {
 				if (spaces[i] == true) {
+					System.out.println("kaart: "+ i);
+
 					g.drawImage(ImageArray[i], (i % groteGame) * lengthOfSpace + 10 * (i % groteGame), (int) (i / groteGame) * lengthOfSpace + 10 * (int) (i / groteGame), null);				
 				}
 			}
@@ -208,47 +221,63 @@ public class memory_mainView implements Runnable {
 		}
 	}
 	
+	// kijken bij het aanklikken van twee afbeeldingen als er een match is
 	private void checkMatch()
 	{	
 
+		if(checkforGelinkteKaarten[0] != -1 && checkforGelinkteKaarten[1] != -1)
 		if((GelinkteKaartenMemory.get(checkforGelinkteKaarten[0]) == checkforGelinkteKaarten[1]))
 		{
-			//System.out.println("GelinkteKaartenMemory");
-
 			spaces[checkforGelinkteKaarten[0]] = true;
 			spaces[checkforGelinkteKaarten[1]] = true;
 		}		
 	}
+	
+	// wanneer er een waarde kan ingelezen worden deze inlezen dis.readInt  
 	private void tick() {
 		if (errors >= 10) unableToCommunicateWithOpponent = true;
 
 		if (!yourTurn && !unableToCommunicateWithOpponent) {
 			try {
-				readValues[indexRead] = dis.readInt();
-				System.out.println("read " + readValues[indexRead]);
-							
+		
+				System.out.println("read " + readValues[indexRead]);							
 
-
+				//Bij een eerste kaart die ingelezen wordt
 				if(indexRead == 0)
 				{
+					if(yourTurn = false)
+					{
+						// de gelinkteKaarten terug resetten
+						checkforGelinkteKaarten[0] = -1;
+						checkforGelinkteKaarten[1] = -1;
+					}
+					
+					// waarde inlezen
+					readValues[indexRead] = dis.readInt();
+
+					
 					checkforGelinkteKaarten[0] = readValues[0];
+					checkforGelinkteKaarten[1] = -1;
+
 					indexRead = 1 ;
 				}
+				//Bij de tweede leesoperatie
 				else //indexRead == 1
 				{
+					readValues[indexRead] = dis.readInt();
+
 					checkforGelinkteKaarten[0] = readValues[0];
 					checkforGelinkteKaarten[1] = readValues[1];
-					System.out.println("ontvangen"+ checkforGelinkteKaarten[0]);
-					System.out.println("ontvangen" + checkforGelinkteKaarten[1]);
 
+					// Bij twee ingelezen kaarten terug kijken als we een match hebben
 					checkMatch();					
 
 					checkForEnemyWin();
 					checkForTie();
 					indexRead = 0;
 					yourTurn = true;
-				}
-				
+					
+				}			
 			
 				
 			} catch (IOException e) {
@@ -310,12 +339,6 @@ public class memory_mainView implements Runnable {
 	private void loadImages() {
 		try {		
 			
-			if(groteGame == 3)
-			{
-				
-			}
-			else
-			{
 				board = ImageIO.read(getClass().getResourceAsStream("/board4X4.png"));
 				ImageArray[0]= ImageIO.read(getClass().getResourceAsStream("/audi4.jpg"));
 				ImageArray[5]= ImageIO.read(getClass().getResourceAsStream("/audi4.jpg"));
@@ -350,7 +373,7 @@ public class memory_mainView implements Runnable {
 				GelinkteKaartenMemory.put(13,12);
 				GelinkteKaartenMemory.put(11,15);
 				GelinkteKaartenMemory.put(15,11);
-			}			
+						
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -362,6 +385,7 @@ public class memory_mainView implements Runnable {
 		memory_mainView ticTacToe = new memory_mainView(4,125);
 	}
 	
+	// nog implementeren zal nodig zijn om de kaarten te verdelen
 	private void fillSpaces()
 	{	
 		 ArrayList<Integer> list = new ArrayList<Integer>();
@@ -390,25 +414,31 @@ public class memory_mainView implements Runnable {
 			render(g);
 		}
 
+		//Bij elke muisklik
 		@Override
 		public void mouseClicked(MouseEvent e) {
-			if (accepted) {
-				
-				//System.out.println("Click");
-				//System.out.println(yourTurn);
-
+			if (accepted) {	
 
 				if (yourTurn && !unableToCommunicateWithOpponent && !won && !enemyWon) {
+					
 					int x = e.getX() / lengthOfSpace;
 					int y = e.getY() / lengthOfSpace;
+					
+					//positie berekenen van de tegel waar op geklikt wordt
+
 					y *= groteGame;
 					int position = x + y;
 					
-					checkforGelinkteKaarten[indexClick]= position;
-					System.out.println("Click " + checkforGelinkteKaarten[indexClick]);
 					
 					if(indexClick == 0)
 					{
+						//resetten
+						checkforGelinkteKaarten[0] = -1;
+						checkforGelinkteKaarten[1] = -1;
+						
+						// de positie doorgeven
+						checkforGelinkteKaarten[indexClick]= position;
+						
 						tweeZetten = false;
 						indexClick = 1;
 						
@@ -423,10 +453,8 @@ public class memory_mainView implements Runnable {
 						}
 					}					
 					else 
-					{
-						//System.out.println("gelinkt 0: "+ checkforGelinkteKaarten[0]);
-						//System.out.println("gelinkt 1: "+ checkforGelinkteKaarten[1]);
-
+					{										
+						checkforGelinkteKaarten[indexClick]= position;
 						tweeZetten = true;
 						
 						repaint();
@@ -447,9 +475,7 @@ public class memory_mainView implements Runnable {
 						checkForTie();
 						
 						indexClick = 0;
-						yourTurn = false;
-						checkforGelinkteKaarten[0] = -1;
-						checkforGelinkteKaarten[1] = -1;
+						yourTurn = false;						
 					}					
 				}
 			}
