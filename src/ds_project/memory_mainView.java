@@ -56,6 +56,7 @@ public class memory_mainView implements Runnable {
 
 	private Boolean[] spaces;
 	private BufferedImage[] spaces2;
+	private int punten;
 
 	private BufferedImage[] ImageArray;
 
@@ -66,6 +67,9 @@ public class memory_mainView implements Runnable {
 	private boolean won = false;
 	private boolean enemyWon = false;
 	private boolean tie = false;
+	private String wonString = "You won!";
+	private String enemyWonString = "Opponent won!";
+	private String tieString = "Game ended in a tie.";
 
 	private int lengthOfSpace;	
 	private int groteGame;
@@ -109,6 +113,7 @@ public class memory_mainView implements Runnable {
 		checkforGelinkteKaarten = new int[2];
 		checkforGelinkteKaarten[0]= -1;
 		checkforGelinkteKaarten[1]= -1;
+		punten = 0;
 
 		readValues = new int[2];
 		//fillSpaces();	
@@ -169,6 +174,9 @@ public class memory_mainView implements Runnable {
 		}
 
 		if (accepted) {
+			checkForTie();
+			checkForEnemyWin();
+			checkForWin();
 			
 			// als er een kaart zit in checkforGelinkteKaarten heeft deze zijn positie, zoniet is deze gelijk aan -1
 			if(checkforGelinkteKaarten[0] != -1)
@@ -211,6 +219,31 @@ public class memory_mainView implements Runnable {
 				}
 			}
 			
+			if (won || enemyWon) {
+				Graphics2D g2 = (Graphics2D) g;
+				g2.setStroke(new BasicStroke(10));
+				g.setColor(Color.BLACK);
+				g.drawLine(firstSpot % 3 * lengthOfSpace + 10 * firstSpot % 3 + lengthOfSpace / 2, (int) (firstSpot / 3) * lengthOfSpace + 10 * (int) (firstSpot / 3) + lengthOfSpace / 2, secondSpot % 3 * lengthOfSpace + 10 * secondSpot % 3 + lengthOfSpace / 2, (int) (secondSpot / 3) * lengthOfSpace + 10 * (int) (secondSpot / 3) + lengthOfSpace / 2);
+
+				g.setColor(Color.RED);
+				g.setFont(largerFont);
+				if (won) {
+					int stringWidth = g2.getFontMetrics().stringWidth(wonString);
+					g.drawString(wonString, WIDTH / 2 - stringWidth / 2, HEIGHT / 2);
+				} else if (enemyWon) {
+					int stringWidth = g2.getFontMetrics().stringWidth(enemyWonString);
+					g.drawString(enemyWonString, WIDTH / 2 - stringWidth / 2, HEIGHT / 2);
+				}
+			}
+			if (tie) {
+				Graphics2D g2 = (Graphics2D) g;
+				g.setColor(Color.BLACK);
+				g.setFont(smallerFont);
+				int stringWidth = g2.getFontMetrics().stringWidth(tieString);
+				g.drawString(tieString, WIDTH / 2 - stringWidth / 2, HEIGHT / 2);
+			}
+			
+			
 		} else {
 			g.setColor(Color.RED);
 			g.setFont(font);
@@ -222,7 +255,7 @@ public class memory_mainView implements Runnable {
 	}
 	
 	// kijken bij het aanklikken van twee afbeeldingen als er een match is
-	private void checkMatch()
+	private boolean checkMatch()
 	{	
 
 		if(checkforGelinkteKaarten[0] != -1 && checkforGelinkteKaarten[1] != -1)
@@ -230,7 +263,9 @@ public class memory_mainView implements Runnable {
 		{
 			spaces[checkforGelinkteKaarten[0]] = true;
 			spaces[checkforGelinkteKaarten[1]] = true;
-		}		
+			return true;
+		}
+		return false;
 	}
 	
 	// wanneer er een waarde kan ingelezen worden deze inlezen dis.readInt  
@@ -270,12 +305,19 @@ public class memory_mainView implements Runnable {
 					checkforGelinkteKaarten[1] = readValues[1];
 
 					// Bij twee ingelezen kaarten terug kijken als we een match hebben
-					checkMatch();					
+					boolean extraBeurt = checkMatch();				
 
-					checkForEnemyWin();
-					checkForTie();
+			
 					indexRead = 0;
-					yourTurn = true;
+					
+					if(extraBeurt == true)
+					{
+						yourTurn = false;
+					}
+					else
+					{
+						yourTurn = true;
+					}
 					
 				}			
 			
@@ -286,17 +328,48 @@ public class memory_mainView implements Runnable {
 			}
 		}
 	}
+	private boolean checkIfAllCardsArePlayed()
+	{
+		for(boolean b : spaces) if(!b) return false;
+	    return true;
+	}
+	
 
-	private void checkForWin() {
+	private void checkForWin() {		
 		
+		if(checkIfAllCardsArePlayed())
+		{
+			if (punten > 4)
+			{
+				won = true;
+				tie = false;
+				enemyWon = false;
+			}			
+		}		
 	}
 
 	private void checkForEnemyWin() {
-		
+		if(checkIfAllCardsArePlayed())
+		{
+			if (punten < 4)
+			{
+				won = false;
+				tie = false;
+				enemyWon = true;			
+			}		
+		}		
 	}
 
 	private void checkForTie() {
-		
+		if(checkIfAllCardsArePlayed())
+		{
+			if (punten == 4)
+			{
+				won = false;
+				tie = true;
+				enemyWon = false;
+			}			
+		}		
 	}
 
 	private void listenForServerRequest() {
@@ -460,7 +533,7 @@ public class memory_mainView implements Runnable {
 						repaint();
 						Toolkit.getDefaultToolkit().sync();
 						
-						checkMatch();
+						boolean extraBeurt = checkMatch();
 
 						try {
 							dos.writeInt(position); 
@@ -469,13 +542,17 @@ public class memory_mainView implements Runnable {
 							errors++;
 							e1.printStackTrace();
 						}
-
-						System.out.println("DATA WAS SENT");
-						checkForWin();
-						checkForTie();
 						
 						indexClick = 0;
-						yourTurn = false;						
+						if(extraBeurt == false)
+						{
+							yourTurn = false;
+						}
+						else
+						{
+							yourTurn = true;
+							punten++;
+						}
 					}					
 				}
 			}
